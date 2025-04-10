@@ -227,7 +227,7 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
       )}
 
       {showTimeComparison && timeComparison && !isCalculating && (
-        <div className="bg-white/5 backdrop-blur-md rounded-lg p-4 space-y-3">
+        <div className="bg-black/40 backdrop-blur-md rounded-lg p-4 space-y-3 border border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Plane className="text-white" size={20} />
@@ -247,18 +247,17 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
               <Clock className="text-white" size={20} />
               <span className="text-white">Time Saved</span>
             </div>
-            <span className="text-green-500 font-medium">{timeComparison.timeSaved} minutes</span>
+            <span className="text-green-400 font-medium">{timeComparison.timeSaved} minutes</span>
           </div>
         </div>
       )}
 
       <Button
-        type="button"
         onClick={handlePlanRoute}
-        disabled={!fromLocation || !toLocation || !showTimeComparison || isCalculating}
-        className="w-full bg-white/10 hover:bg-white/20 text-white font-medium tracking-wide py-3 backdrop-blur-md border border-white/10 transition-colors"
+        disabled={!fromLocation || !toLocation || isCalculating}
+        className="w-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/10 text-white py-2 rounded-lg transition-colors backdrop-blur-md border border-white/10"
       >
-        {isCalculating ? 'Calculating...' : 'Let’s Take Off!'}
+        {isCalculating ? 'Calculating...' : "Let's Take Off!"}
       </Button>
     </form>
   );
