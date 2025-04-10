@@ -214,8 +214,13 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
           ref={fromInputRef}
           type="text"
           placeholder="Enter starting location"
-          className="w-full p-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-white/50"
-          style={{ fontSize: '16px' }}
+          className="w-full p-3 rounded bg-white/5 border border-white/10 text-white placeholder:text-white/50"
+          style={{ 
+            fontSize: '16px',
+            height: '44px',
+            WebkitAppearance: 'none',
+            WebkitTapHighlightColor: 'transparent'
+          }}
           inputMode="text"
           autoComplete="off"
         />
@@ -226,8 +231,13 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
           ref={toInputRef}
           type="text"
           placeholder="Enter destination"
-          className="w-full p-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-white/50"
-          style={{ fontSize: '16px' }}
+          className="w-full p-3 rounded bg-white/5 border border-white/10 text-white placeholder:text-white/50"
+          style={{ 
+            fontSize: '16px',
+            height: '44px',
+            WebkitAppearance: 'none',
+            WebkitTapHighlightColor: 'transparent'
+          }}
           inputMode="text"
           autoComplete="off"
         />
