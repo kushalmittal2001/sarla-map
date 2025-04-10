@@ -262,7 +262,7 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
             : 'bg-white text-black hover:bg-white/90'
         }`}
       >
-        Calculate Your Route
+        Let's Take Off!
       </button>
     </form>
   );
