@@ -227,27 +227,30 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
       )}
 
       {showTimeComparison && timeComparison && !isCalculating && (
-        <div className="bg-black/40 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white/10">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Plane className="text-white" size={20} />
-              <span className="text-white">Flying Time</span>
+        <div className="relative">
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="relative bg-black/30 backdrop-blur-sm rounded-lg p-4 space-y-3 border border-white/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Plane className="text-white" size={20} />
+                <span className="text-white">Flying Time</span>
+              </div>
+              <span className="text-white font-medium">{timeComparison.flyingMinutes} minutes</span>
             </div>
-            <span className="text-white font-medium">{timeComparison.flyingMinutes} minutes</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Car className="text-white" size={20} />
-              <span className="text-white">Driving Time</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Car className="text-white" size={20} />
+                <span className="text-white">Driving Time</span>
+              </div>
+              <span className="text-white font-medium">{timeComparison.cabMinutes} minutes</span>
             </div>
-            <span className="text-white font-medium">{timeComparison.cabMinutes} minutes</span>
-          </div>
-          <div className="flex items-center justify-between pt-2 border-t border-white/10">
-            <div className="flex items-center gap-2">
-              <Clock className="text-white" size={20} />
-              <span className="text-white">Time Saved</span>
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                <Clock className="text-white" size={20} />
+                <span className="text-white">Time Saved</span>
+              </div>
+              <span className="text-green-400 font-medium">{timeComparison.timeSaved} minutes</span>
             </div>
-            <span className="text-green-400 font-medium">{timeComparison.timeSaved} minutes</span>
           </div>
         </div>
       )}
