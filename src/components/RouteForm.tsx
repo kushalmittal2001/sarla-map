@@ -170,9 +170,13 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
         }
       };
 
-      // Add event listeners
+      // Add event listeners with touch support
       fromAutocomplete.addListener('place_changed', handleFromPlaceSelect);
       toAutocomplete.addListener('place_changed', handleToPlaceSelect);
+
+      // Add touch event listeners for better mobile support
+      fromInputRef.current.addEventListener('touchend', handleFromPlaceSelect);
+      toInputRef.current.addEventListener('touchend', handleToPlaceSelect);
 
       // Clear comparison when component mounts
       setTimeComparison(null);
@@ -183,6 +187,9 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
           window.google.maps.event.clearInstanceListeners(fromAutocomplete);
           window.google.maps.event.clearInstanceListeners(toAutocomplete);
         }
+        // Clean up touch event listeners
+        fromInputRef.current?.removeEventListener('touchend', handleFromPlaceSelect);
+        toInputRef.current?.removeEventListener('touchend', handleToPlaceSelect);
       };
     } catch (error) {
       console.error('Error initializing autocomplete:', error);
