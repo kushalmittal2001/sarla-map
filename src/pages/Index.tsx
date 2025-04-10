@@ -44,17 +44,17 @@ const Index = () => {
             className="bg-white/5 backdrop-blur-md rounded-full border border-white/10 transition-all duration-200 shadow-lg cursor-pointer"
             onClick={() => setShowRouteForm(true)}
           >
-            <div className="flex items-center px-4 py-2">
-              <Search size={20} className="text-gray-400 mr-2" />
+            <div className="flex items-center px-2 sm:px-3 py-1 sm:py-1.5">
+              <Search size={16} className="text-gray-400 mr-1 sm:mr-2 flex-shrink-0" />
               <Input 
                 placeholder="Plan Your Future Flight with Sarla Aviation" 
-                className="bg-transparent border-none h-8 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400 pointer-events-none text-white"
+                className="bg-transparent border-none h-6 sm:h-7 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-gray-400 pointer-events-none text-white text-xs sm:text-sm truncate"
                 readOnly
               />
               <img 
                 src="/jn-logo.png" 
                 alt="JN Logo" 
-                className="w-5 h-5 ml-2 object-contain filter brightness-0 invert"
+                className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2 object-contain filter brightness-0 invert flex-shrink-0"
               />
             </div>
           </div>

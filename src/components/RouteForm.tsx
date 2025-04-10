@@ -216,6 +216,8 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
           placeholder="Enter starting location"
           className="w-full p-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-white/50 text-base"
           style={{ fontSize: '16px' }}
+          inputMode="text"
+          autoComplete="off"
         />
       </div>
       <div className="space-y-2">
@@ -226,6 +228,8 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
           placeholder="Enter destination"
           className="w-full p-2 rounded bg-white/5 border border-white/10 text-white placeholder:text-white/50 text-base"
           style={{ fontSize: '16px' }}
+          inputMode="text"
+          autoComplete="off"
         />
       </div>
 
