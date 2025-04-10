@@ -115,16 +115,16 @@ const TimeInfo = ({ route }: { route?: { from: Location; to: Location } }) => {
   if (!times || !route) return null;
 
   return (
-    <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-10 bg-white/5 backdrop-blur-md rounded-lg shadow-lg p-2.5 flex items-center gap-5 border border-white/10 text-sm">
-      <div className="flex items-center gap-1.5 text-purple-400">
+    <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-10 bg-white/5 backdrop-blur-md rounded-lg shadow-lg p-3 flex items-center gap-6 border border-white/10 text-sm whitespace-nowrap">
+      <div className="flex items-center gap-2 text-purple-400">
         <Plane size={14} />
         <span>{times.evtolTime}min</span>
       </div>
-      <div className="flex items-center gap-1.5 text-red-400">
+      <div className="flex items-center gap-2 text-red-400">
         <Car size={14} />
         <span>{times.carTime}min</span>
       </div>
-      <div className="flex items-center gap-1.5 text-green-400">
+      <div className="flex items-center gap-2 text-green-400">
         <Clock size={14} />
         <span>Save {times.timeSaved}min</span>
       </div>
