@@ -252,13 +252,18 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
         </div>
       )}
 
-      <Button
+      <button
+        type="button"
         onClick={handlePlanRoute}
-        disabled={!fromLocation || !toLocation || isCalculating}
-        className="w-full bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white/10 text-white py-2 rounded-lg transition-colors backdrop-blur-md border border-white/10"
+        disabled={!fromLocation || !toLocation}
+        className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
+          !fromLocation || !toLocation
+            ? 'bg-white/10 text-white/50 cursor-not-allowed'
+            : 'bg-white text-black hover:bg-white/90'
+        }`}
       >
-        {isCalculating ? 'Calculating...' : "Let's Take Off!"}
-      </Button>
+        Calculate Your Route
+      </button>
     </form>
   );
 };
