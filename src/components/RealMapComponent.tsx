@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Search, Menu, Layers, Plane, Car, Clock } from 'lucide-react';
 import { Location } from '@/types/location';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
+import PublicRouteWall from './PublicRouteWall';
 
 const MapControls = ({
   showFlyingRoute,
@@ -146,6 +148,217 @@ const RealMapComponent: React.FC<RealMapComponentProps> = ({ route }) => {
   const evtolMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const start = useRef<number>(0);
   const evtolProgress = useRef<number>(0);
+  const publicRoutesRef = useRef<string[]>([]);
+
+  // Add this new function to fetch and display public routes
+  const fetchAndDisplayPublicRoutes = async () => {
+    if (!map.current) return;
+
+    try {
+      const { data: routes, error } = await supabase
+        .from('routes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Remove existing public routes
+      publicRoutesRef.current.forEach(layerId => {
+        if (map.current?.getLayer(layerId)) {
+          map.current.removeLayer(layerId);
+        }
+      });
+      publicRoutesRef.current = [];
+
+      // Filter out routes that match the current search
+      const filteredRoutes = routes.filter(publicRoute => {
+        if (!route) return true; // If no current route, show all public routes
+        
+        // Round coordinates to 6 decimal places for more precise comparison
+        const roundCoord = (coord: number) => Math.round(coord * 1000000) / 1000000;
+        
+        const publicFromLat = roundCoord(publicRoute.from.lat);
+        const publicFromLng = roundCoord(publicRoute.from.lng);
+        const publicToLat = roundCoord(publicRoute.to.lat);
+        const publicToLng = roundCoord(publicRoute.to.lng);
+        
+        const currentFromLat = roundCoord(route.from.lat);
+        const currentFromLng = roundCoord(route.from.lng);
+        const currentToLat = roundCoord(route.to.lat);
+        const currentToLng = roundCoord(route.to.lng);
+
+        // Check if routes are the same (in either direction)
+        const isSameRoute = 
+          (Math.abs(publicFromLat - currentFromLat) < 0.000001 && 
+           Math.abs(publicFromLng - currentFromLng) < 0.000001 && 
+           Math.abs(publicToLat - currentToLat) < 0.000001 && 
+           Math.abs(publicToLng - currentToLng) < 0.000001) ||
+          (Math.abs(publicFromLat - currentToLat) < 0.000001 && 
+           Math.abs(publicFromLng - currentToLng) < 0.000001 && 
+           Math.abs(publicToLat - currentFromLat) < 0.000001 && 
+           Math.abs(publicToLng - currentFromLng) < 0.000001);
+
+        // Return false to filter out matching routes
+        return !isSameRoute;
+      });
+
+      // Add new public routes
+      filteredRoutes.forEach((publicRoute, index) => {
+        const layerId = `public-route-${index}`;
+        const sourceId = `public-route-source-${index}`;
+        const markersSourceId = `public-route-markers-${index}`;
+
+        if (map.current?.getSource(sourceId)) {
+          map.current.removeSource(sourceId);
+        }
+        if (map.current?.getSource(markersSourceId)) {
+          map.current.removeSource(markersSourceId);
+        }
+
+        // Create curved coordinates for the public route
+        const midPoint = [
+          (publicRoute.from.lng + publicRoute.to.lng) / 2,
+          (publicRoute.from.lat + publicRoute.to.lat) / 2
+        ];
+        
+        const distance = Math.sqrt(
+          Math.pow(publicRoute.to.lng - publicRoute.from.lng, 2) +
+          Math.pow(publicRoute.to.lat - publicRoute.from.lat, 2)
+        );
+        const curveHeight = distance * 0.15;
+
+        const flyingCoordinates = [];
+        // Start with exact source point
+        flyingCoordinates.push([publicRoute.from.lng, publicRoute.from.lat]);
+        
+        // Generate more points near the start and end for smoother connection
+        for (let t = 0; t <= 1; t += 0.01) {
+          // Use cubic interpolation for smoother curve and better endpoint precision
+          const tt = t * t;
+          const ttt = tt * t;
+          const u = 1 - t;
+          const uu = u * u;
+          const uuu = uu * u;
+
+          const lng = uuu * publicRoute.from.lng +
+                     3 * uu * t * midPoint[0] +
+                     3 * u * tt * midPoint[0] +
+                     ttt * publicRoute.to.lng;
+          const lat = uuu * publicRoute.from.lat +
+                     3 * uu * t * (midPoint[1] + curveHeight) +
+                     3 * u * tt * (midPoint[1] + curveHeight) +
+                     ttt * publicRoute.to.lat;
+
+          flyingCoordinates.push([lng, lat]);
+
+          // Add extra points near the endpoints for better precision
+          if (t < 0.1 || t > 0.9) {
+            flyingCoordinates.push([lng, lat]);
+          }
+        }
+        
+        // Add multiple points at exact destination for better connection
+        for (let i = 0; i < 3; i++) {
+          flyingCoordinates.push([publicRoute.to.lng, publicRoute.to.lat]);
+        }
+
+        // Add route source
+        map.current?.addSource(sourceId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: flyingCoordinates
+            }
+          }
+        });
+
+        // Add markers source
+        map.current?.addSource(markersSourceId, {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [publicRoute.from.lng, publicRoute.from.lat]
+                },
+                properties: { point: 'start' }
+              },
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [publicRoute.to.lng, publicRoute.to.lat]
+                },
+                properties: { point: 'end' }
+              }
+            ]
+          }
+        });
+
+        // Add markers
+        map.current?.addLayer({
+          id: `${layerId}-markers`,
+          type: 'circle',
+          source: markersSourceId,
+          paint: {
+            'circle-radius': 2.5,
+            'circle-color': '#6366f1',
+            'circle-opacity': 0.5,
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#6366f1',
+            'circle-stroke-opacity': 0.2
+          }
+        });
+
+        // Add main line
+        map.current?.addLayer({
+          id: layerId,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+            'visibility': 'visible'
+          },
+          paint: {
+            'line-color': '#6366f1',
+            'line-width': 2,
+            'line-opacity': 0.3
+          }
+        });
+
+        // Add background track
+        map.current?.addLayer({
+          id: `${layerId}-bg`,
+          type: 'line',
+          source: sourceId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+            'visibility': 'visible'
+          },
+          paint: {
+            'line-color': '#6366f1',
+            'line-width': 2,
+            'line-opacity': 0.1
+          }
+        });
+
+        // Store layer IDs in correct order
+        publicRoutesRef.current.push(`${layerId}-markers`);
+        publicRoutesRef.current.push(layerId);
+        publicRoutesRef.current.push(`${layerId}-bg`);
+      });
+    } catch (error) {
+      console.error('Error fetching public routes:', error);
+    }
+  };
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -256,6 +469,18 @@ const RealMapComponent: React.FC<RealMapComponentProps> = ({ route }) => {
             });
           }
         }
+
+        // Initial fetch of public routes
+        fetchAndDisplayPublicRoutes();
+
+        // Set up interval to refresh public routes
+        const intervalId = setInterval(() => {
+          fetchAndDisplayPublicRoutes();  // Always refresh, the filter logic is inside fetchAndDisplayPublicRoutes
+        }, 10000); // Refresh every 10 seconds
+
+        return () => {
+          clearInterval(intervalId);
+        };
       });
 
       // Add zoom event listener for responsive sizing
@@ -301,7 +526,7 @@ const RealMapComponent: React.FC<RealMapComponentProps> = ({ route }) => {
         map.current = null;
       }
     };
-  }, []); // Remove route from dependencies to prevent re-initialization
+  }, []);  // Keep this as empty dependency array
 
   const animateEvtol = (timestamp: number) => {
     if (!map.current || !route) return;
@@ -405,6 +630,9 @@ const RealMapComponent: React.FC<RealMapComponentProps> = ({ route }) => {
 
     // If no map or route, just return after cleanup
     if (!map.current || !route) return;
+
+    // Fetch and display public routes first to ensure they're filtered
+    fetchAndDisplayPublicRoutes();
 
     const addRoute = async () => {
       try {
@@ -683,15 +911,16 @@ const RealMapComponent: React.FC<RealMapComponentProps> = ({ route }) => {
   }, [route]);
 
   return (
-      <div className="fixed inset-0 z-0">
-            <div ref={mapContainer} className="w-full h-full" />
+    <div className="fixed inset-0 z-0">
+      <div ref={mapContainer} className="w-full h-full" />
       {route && (
         <TimeInfo 
           key={`${route.from.lat},${route.from.lng}-${route.to.lat},${route.to.lng}`}
           route={route}
         />
-        )}
-      </div>
+      )}
+      <PublicRouteWall />
+    </div>
   );
 };
 

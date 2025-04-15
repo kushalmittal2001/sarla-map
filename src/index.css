@@ -64,6 +64,6 @@
   }
   
   .scrollbar-none::-webkit-scrollbar {
-    display: none;
+    display: none; /* Hide scrollbar */
   }
 }

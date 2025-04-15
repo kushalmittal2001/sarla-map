@@ -3,6 +3,7 @@ import { Location } from '@/types/location';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, MapPin, X, Clock, Car, Plane } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 // @ts-ignore
 declare global {
@@ -196,9 +197,132 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
     }
   }, [scriptLoaded, fromLocation, toLocation, onLocationSelect]);
 
-  const handlePlanRoute = () => {
+  const saveRouteToSupabase = async (from: Location, to: Location, duration: number) => {
+    try {
+      // First try to find an existing route
+      const { data: existingRoutes, error: searchError } = await supabase
+        .from('routes')
+        .select('id, popularity')
+        .eq('from->>name', from.name)
+        .eq('to->>name', to.name)
+        .limit(1);
+
+      if (searchError) {
+        console.error('Search error:', searchError);
+        throw searchError;
+      }
+
+      // If no route found in one direction, try the reverse direction
+      if (!existingRoutes || existingRoutes.length === 0) {
+        const { data: reverseRoutes, error: reverseSearchError } = await supabase
+          .from('routes')
+          .select('id, popularity')
+          .eq('from->>name', to.name)
+          .eq('to->>name', from.name)
+          .limit(1);
+
+        if (reverseSearchError) {
+          console.error('Reverse search error:', reverseSearchError);
+          throw reverseSearchError;
+        }
+
+        if (reverseRoutes && reverseRoutes.length > 0) {
+          // Found a route in reverse direction, update its popularity
+          const existingRoute = reverseRoutes[0];
+          const { error: updateError } = await supabase
+            .from('routes')
+            .update({ popularity: (existingRoute.popularity || 0) + 1 })
+            .eq('id', existingRoute.id);
+
+          if (updateError) {
+            console.error('Update error:', updateError);
+            throw updateError;
+          }
+
+          console.log('Successfully updated route popularity');
+          return;
+        }
+      } else {
+        // Found a route in the original direction, update its popularity
+        const existingRoute = existingRoutes[0];
+        const { error: updateError } = await supabase
+          .from('routes')
+          .update({ popularity: (existingRoute.popularity || 0) + 1 })
+          .eq('id', existingRoute.id);
+
+        if (updateError) {
+          console.error('Update error:', updateError);
+          throw updateError;
+        }
+
+        console.log('Successfully updated route popularity');
+        return;
+      }
+
+      // If we get here, no existing route was found, so insert a new one
+      console.log('No existing route found, inserting new one');
+      const { error: insertError } = await supabase
+        .from('routes')
+        .insert({
+          from,
+          to,
+          duration,
+          popularity: 1
+        });
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
+
+      console.log('Successfully inserted new route');
+    } catch (error) {
+      console.error('Error in saveRouteToSupabase:', error);
+      throw error;
+    }
+  };
+
+  const handlePlanRoute = async () => {
     if (fromLocation && toLocation) {
-      onPlanRoute(fromLocation, toLocation);
+      try {
+        const { flyingTime } = calculateFlyingTime(fromLocation, toLocation);
+        await saveRouteToSupabase(fromLocation, toLocation, flyingTime);
+        onPlanRoute(fromLocation, toLocation);
+      } catch (error) {
+        console.error('Error in handlePlanRoute:', error);
+      }
+    }
+  };
+
+  const calculateDistance = (from: Location, to: Location) => {
+    const R = 6371; // Earth's radius in km
+    const lat1 = (from.lat * Math.PI) / 180;
+    const lat2 = (to.lat * Math.PI) / 180;
+    const deltaLat = ((to.lat - from.lat) * Math.PI) / 180;
+    const deltaLng = ((to.lng - from.lng) * Math.PI) / 180;
+
+    const a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+              Math.cos(lat1) * Math.cos(lat2) *
+              Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in km
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fromLocation || !toLocation) return;
+
+    // Calculate distance
+    const distance = calculateDistance(fromLocation, toLocation);
+    if (distance > 200) {
+      return;
+    }
+
+    // Check if route already exists
+    try {
+      await handlePlanRoute();
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
     }
   };
 
@@ -280,7 +404,7 @@ const RouteForm: React.FC<RouteFormProps> = ({ onLocationSelect, onPlanRoute }) 
 
       <button
         type="button"
-        onClick={handlePlanRoute}
+        onClick={handleSubmit}
         disabled={!fromLocation || !toLocation}
         className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 ${
           !fromLocation || !toLocation
